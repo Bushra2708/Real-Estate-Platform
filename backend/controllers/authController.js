@@ -2,6 +2,14 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
 
+const isProduction = process.env.NODE_ENV === "production";
+const cookieOptions = {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: isProduction ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -37,10 +45,7 @@ export const registerUser = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, cookieOptions);
 
     res.status(201).json({
       success: true,
@@ -84,10 +89,7 @@ export const loginUser = async (req, res) => {
 
     const token = generateToken(user._id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    res.cookie("token", token, cookieOptions);
 
     res.status(200).json({
       success: true,
@@ -106,7 +108,11 @@ export const loginUser = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
   res.cookie("token", "", {
+    httpOnly: cookieOptions.httpOnly,
+    secure: cookieOptions.secure,
+    sameSite: cookieOptions.sameSite,
     expires: new Date(0),
+    maxAge: 0,
   });
 
   res.status(200).json({
